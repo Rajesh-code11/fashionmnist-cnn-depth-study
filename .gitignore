@@ -1,18 +1,22 @@
+# FashionMNIST downloaded/processed data
+data/FashionMNIST/
+
+# Model checkpoints and weights
+*.pt
+*.pth
+*.ckpt
+
+# Python cache and environments
 __pycache__/
 *.py[cod]
-*.class
-
 .venv/
 venv/
-env/
 .env
 
-.ipynb_checkpoints/
-
-data/FashionMNIST/raw/
-data/FashionMNIST/processed/
-
+# Logs and operating-system files
 *.log
-
 .DS_Store
 Thumbs.db
+
+# Jupyter temporary files
+.ipynb_checkpoints/

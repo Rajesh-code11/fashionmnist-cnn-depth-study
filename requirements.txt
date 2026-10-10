@@ -1,8 +1,6 @@
-@"
-torch
+﻿torch
 torchvision
 numpy
 pandas
 matplotlib
 scipy
-"@ | Set-Content requirements.txt

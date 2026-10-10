@@ -1,0 +1,187 @@
+{
+    "evaluation": {
+        "device": "cpu",
+        "batch_size": 128,
+        "seeds": [
+            42,
+            43,
+            44,
+            45,
+            46
+        ],
+        "test_split": "Official FashionMNIST test set",
+        "checkpoint_selection": "Saved checkpoint selected by lowest validation loss"
+    },
+    "individual_results": [
+        {
+            "model": "CNN5",
+            "seed": 42,
+            "test_examples": 10000,
+            "test_loss": 0.22047509174346924,
+            "test_accuracy": 0.926,
+            "best_epoch": 5,
+            "best_validation_accuracy": null
+        },
+        {
+            "model": "CNN5",
+            "seed": 43,
+            "test_examples": 10000,
+            "test_loss": 0.22510204581022264,
+            "test_accuracy": 0.9234,
+            "best_epoch": 7,
+            "best_validation_accuracy": null
+        },
+        {
+            "model": "CNN5",
+            "seed": 44,
+            "test_examples": 10000,
+            "test_loss": 0.2051406997680664,
+            "test_accuracy": 0.9285,
+            "best_epoch": 5,
+            "best_validation_accuracy": null
+        },
+        {
+            "model": "CNN5",
+            "seed": 45,
+            "test_examples": 10000,
+            "test_loss": 0.22299648027420044,
+            "test_accuracy": 0.9204,
+            "best_epoch": 4,
+            "best_validation_accuracy": null
+        },
+        {
+            "model": "CNN5",
+            "seed": 46,
+            "test_examples": 10000,
+            "test_loss": 0.2231728672504425,
+            "test_accuracy": 0.9255,
+            "best_epoch": 5,
+            "best_validation_accuracy": null
+        },
+        {
+            "model": "CNN7",
+            "seed": 42,
+            "test_examples": 10000,
+            "test_loss": 0.22496187121868133,
+            "test_accuracy": 0.9184,
+            "best_epoch": 5,
+            "best_validation_accuracy": null
+        },
+        {
+            "model": "CNN7",
+            "seed": 43,
+            "test_examples": 10000,
+            "test_loss": 0.23207483894824982,
+            "test_accuracy": 0.9221,
+            "best_epoch": 7,
+            "best_validation_accuracy": null
+        },
+        {
+            "model": "CNN7",
+            "seed": 44,
+            "test_examples": 10000,
+            "test_loss": 0.21428774979114532,
+            "test_accuracy": 0.9214,
+            "best_epoch": 5,
+            "best_validation_accuracy": null
+        },
+        {
+            "model": "CNN7",
+            "seed": 45,
+            "test_examples": 10000,
+            "test_loss": 0.23523205902576447,
+            "test_accuracy": 0.9228,
+            "best_epoch": 8,
+            "best_validation_accuracy": null
+        },
+        {
+            "model": "CNN7",
+            "seed": 46,
+            "test_examples": 10000,
+            "test_loss": 0.23738590042591096,
+            "test_accuracy": 0.9188,
+            "best_epoch": 5,
+            "best_validation_accuracy": null
+        },
+        {
+            "model": "CNN5Wide",
+            "seed": 42,
+            "test_examples": 10000,
+            "test_loss": 0.22591812167167663,
+            "test_accuracy": 0.9231,
+            "best_epoch": 5,
+            "best_validation_accuracy": null
+        },
+        {
+            "model": "CNN5Wide",
+            "seed": 43,
+            "test_examples": 10000,
+            "test_loss": 0.21602736399173736,
+            "test_accuracy": 0.9247,
+            "best_epoch": 5,
+            "best_validation_accuracy": null
+        },
+        {
+            "model": "CNN5Wide",
+            "seed": 44,
+            "test_examples": 10000,
+            "test_loss": 0.21303218985795974,
+            "test_accuracy": 0.9261,
+            "best_epoch": 5,
+            "best_validation_accuracy": null
+        },
+        {
+            "model": "CNN5Wide",
+            "seed": 45,
+            "test_examples": 10000,
+            "test_loss": 0.23357198525071143,
+            "test_accuracy": 0.9207,
+            "best_epoch": 6,
+            "best_validation_accuracy": null
+        },
+        {
+            "model": "CNN5Wide",
+            "seed": 46,
+            "test_examples": 10000,
+            "test_loss": 0.20932798463106156,
+            "test_accuracy": 0.9239,
+            "best_epoch": 4,
+            "best_validation_accuracy": null
+        }
+    ],
+    "architecture_summaries": [
+        {
+            "model": "CNN5",
+            "number_of_seeds": 5,
+            "test_examples_per_run": 10000,
+            "mean_test_accuracy": 0.92476,
+            "sample_sd_test_accuracy": 0.0030385851970942037,
+            "min_test_accuracy": 0.9204,
+            "max_test_accuracy": 0.9285,
+            "mean_test_loss": 0.21937743696928025,
+            "sample_sd_test_loss": 0.008126552835974996
+        },
+        {
+            "model": "CNN7",
+            "number_of_seeds": 5,
+            "test_examples_per_run": 10000,
+            "mean_test_accuracy": 0.9207,
+            "sample_sd_test_accuracy": 0.0019849433241279275,
+            "min_test_accuracy": 0.9184,
+            "max_test_accuracy": 0.9228,
+            "mean_test_loss": 0.2287884838819504,
+            "sample_sd_test_loss": 0.009369493251145776
+        },
+        {
+            "model": "CNN5Wide",
+            "number_of_seeds": 5,
+            "test_examples_per_run": 10000,
+            "mean_test_accuracy": 0.9237,
+            "sample_sd_test_accuracy": 0.0020099751242241967,
+            "min_test_accuracy": 0.9207,
+            "max_test_accuracy": 0.9261,
+            "mean_test_loss": 0.21957552908062936,
+            "sample_sd_test_loss": 0.009956733864875856
+        }
+    ]
+}

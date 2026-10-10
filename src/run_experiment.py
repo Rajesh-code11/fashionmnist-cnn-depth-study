@@ -1,135 +1,222 @@
+
 import json
 import os
+import tempfile
+from pathlib import Path
 
-from models import CNN5, CNN7, CNN5Wide, count_parameters
+import numpy as np
+import torch
+
+from models import CNN5, count_parameters
 from train import train_model, set_seed
 from utils import get_data_loaders, get_device
 
 
-SEEDS = [42, 43, 44, 45, 46]
+# ---------------------------------------------------------
+# CPU EXPERIMENT: CNN5, FIVE SEEDS
+# ---------------------------------------------------------
 
-MODELS = {
-    "CNN5": CNN5,
-    "CNN7": CNN7,
-    "CNN5Wide": CNN5Wide,
-}
+SEEDS = [42, 43, 44, 45, 46]
 
 BATCH_SIZE = 128
 EPOCHS = 50
 LEARNING_RATE = 1e-3
 PATIENCE = 5
+SPLIT_SEED = 2026
+
+# Keep this separate from the original experiment outputs.
+OUTPUT_DIR = Path("results_cpu_cnn5")
+CHECKPOINT_DIR = OUTPUT_DIR / "checkpoints"
+RESULTS_PATH = OUTPUT_DIR / "raw_results.json"
+
+# Avoid oversubscribing the CPU.
+CPU_THREADS = 6
 
 
-def run_single_experiment(model_name, model_class, seed, device):
+def atomic_json_save(data, path):
+    path.parent.mkdir(parents=True, exist_ok=True)
 
-    print("=" * 70)
-    print(f"Model: {model_name} | Seed: {seed}")
-    print("=" * 70)
+    with tempfile.NamedTemporaryFile(
+        mode="w",
+        encoding="utf-8",
+        dir=path.parent,
+        delete=False,
+    ) as temp_file:
+        json.dump(data, temp_file, indent=4)
+        temp_path = Path(temp_file.name)
 
-    set_seed(seed)
+    os.replace(temp_path, path)
 
-    train_loader, val_loader, _ = get_data_loaders(
-        batch_size=BATCH_SIZE,
-        seed=seed,
-    )
 
-    model = model_class()
+def checkpoint_path(seed):
+    return CHECKPOINT_DIR / f"CNN5_seed_{seed}.pt"
 
-    parameter_count = count_parameters(model)
 
-    print(f"Parameters: {parameter_count:,}")
-    print(f"Device: {device}")
-    print()
+def save_checkpoint(model, metadata, path):
+    path.parent.mkdir(parents=True, exist_ok=True)
 
-    model, history = train_model(
-        model=model,
-        train_loader=train_loader,
-        val_loader=val_loader,
-        device=device,
-        epochs=EPOCHS,
-        learning_rate=LEARNING_RATE,
-        patience=PATIENCE,
-        seed=seed,
-    )
-
-    best_epoch = history["val_loss"].index(
-        min(history["val_loss"])
-    ) + 1
-
-    best_val_loss = min(history["val_loss"])
-
-    best_val_accuracy = history["val_accuracy"][
-        best_epoch - 1
-    ]
-
-    return {
-        "model": model_name,
-        "seed": seed,
-        "parameters": parameter_count,
-        "best_epoch": best_epoch,
-        "best_val_loss": best_val_loss,
-        "best_val_accuracy": best_val_accuracy,
-        "epochs_completed": len(history["train_loss"]),
-        "train_loss": history["train_loss"],
-        "train_accuracy": history["train_accuracy"],
-        "val_loss": history["val_loss"],
-        "val_accuracy": history["val_accuracy"],
+    payload = {
+        "model_state_dict": model.state_dict(),
+        "metadata": metadata,
     }
+
+    with tempfile.NamedTemporaryFile(
+        dir=path.parent,
+        suffix=".tmp",
+        delete=False,
+    ) as temp_file:
+        temp_path = Path(temp_file.name)
+
+    try:
+        torch.save(payload, temp_path)
+        os.replace(temp_path, path)
+    finally:
+        if temp_path.exists():
+            temp_path.unlink()
+
+
+def load_completed_results():
+    if not RESULTS_PATH.exists():
+        return []
+
+    with RESULTS_PATH.open("r", encoding="utf-8") as file:
+        results = json.load(file)
+
+    completed = []
+    seen = set()
+
+    for result in results:
+        seed = int(result["seed"])
+
+        if seed in seen:
+            raise ValueError(f"Duplicate CNN5 seed: {seed}")
+
+        seen.add(seed)
+
+        # A run is complete only if its checkpoint also exists.
+        if checkpoint_path(seed).exists():
+            completed.append(result)
+        else:
+            print(
+                f"Seed {seed} has metrics but no checkpoint; "
+                "it will be rerun."
+            )
+
+    return completed
 
 
 def main():
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    CHECKPOINT_DIR.mkdir(parents=True, exist_ok=True)
 
+    torch.set_num_threads(CPU_THREADS)
     device = get_device()
 
-    os.makedirs("results", exist_ok=True)
+    print("=" * 65)
+    print("CNN5 CPU EXPERIMENT")
+    print("=" * 65)
+    print(f"PyTorch: {torch.__version__}")
+    print(f"Device: {device}")
+    print(f"CPU threads: {torch.get_num_threads()}")
+    print(f"Seeds: {SEEDS}")
+    print(f"Output: {OUTPUT_DIR.resolve()}")
+    print()
 
-    output_path = "results/raw_results.json"
+    if device.type != "cpu":
+        print("CUDA is available; this runner is intended for CPU.")
+        print("Stopping to avoid an unintended device change.")
+        return
 
-    all_results = []
+    results = load_completed_results()
+    completed_seeds = {int(item["seed"]) for item in results}
 
-    for model_name, model_class in MODELS.items():
+    atomic_json_save(results, RESULTS_PATH)
 
-        for seed in SEEDS:
+    for seed in SEEDS:
+        if seed in completed_seeds:
+            print(f"Skipping completed seed {seed}")
+            continue
 
-            result = run_single_experiment(
-                model_name=model_name,
-                model_class=model_class,
-                seed=seed,
-                device=device,
-            )
+        print("\n" + "=" * 65)
+        print(f"Starting CNN5 | Seed {seed}")
+        print("=" * 65)
 
-            all_results.append(result)
+        set_seed(seed)
 
-            # Save after every completed run
-            with open(output_path, "w") as file:
-                json.dump(
-                    all_results,
-                    file,
-                    indent=4,
-                )
+        train_loader, val_loader, _ = get_data_loaders(
+            batch_size=BATCH_SIZE,
+            seed=seed,
+            split_seed=SPLIT_SEED,
+            num_workers=0,
+        )
 
-            print()
-            print(
-                f"Best validation accuracy: "
-                f"{result['best_val_accuracy']:.4f}"
-            )
+        model = CNN5()
+        parameters = count_parameters(model)
 
-            print(
-                f"Best epoch: "
-                f"{result['best_epoch']}"
-            )
+        model, history = train_model(
+            model=model,
+            train_loader=train_loader,
+            val_loader=val_loader,
+            device=device,
+            epochs=EPOCHS,
+            learning_rate=LEARNING_RATE,
+            patience=PATIENCE,
+            seed=seed,
+        )
 
-            print(
-                f"Completed runs: "
-                f"{len(all_results)}/15"
-            )
+        best_epoch = int(np.argmin(history["val_loss"])) + 1
+        best_val_loss = float(history["val_loss"][best_epoch - 1])
+        best_val_accuracy = float(
+            history["val_accuracy"][best_epoch - 1]
+        )
 
-            print()
+        record = {
+            "model": "CNN5",
+            "seed": seed,
+            "parameters": parameters,
+            "best_epoch": best_epoch,
+            "best_val_loss": best_val_loss,
+            "best_val_accuracy": best_val_accuracy,
+            "epochs_completed": len(history["train_loss"]),
+            "train_loss": history["train_loss"],
+            "train_accuracy": history["train_accuracy"],
+            "val_loss": history["val_loss"],
+            "val_accuracy": history["val_accuracy"],
+        }
 
-    print("=" * 70)
-    print("EXPERIMENT COMPLETE")
-    print("=" * 70)
-    print(f"Results saved to: {output_path}")
+        metadata = {
+            "model": "CNN5",
+            "seed": seed,
+            "parameters": parameters,
+            "best_epoch": best_epoch,
+            "best_val_loss": best_val_loss,
+            "best_val_accuracy": best_val_accuracy,
+            "batch_size": BATCH_SIZE,
+            "learning_rate": LEARNING_RATE,
+            "max_epochs": EPOCHS,
+            "patience": PATIENCE,
+            "split_seed": SPLIT_SEED,
+            "selection_metric": "minimum validation loss",
+            "test_set_evaluated": False,
+        }
+
+        # Save weights before marking the run as complete.
+        save_checkpoint(model, metadata, checkpoint_path(seed))
+
+        results.append(record)
+        atomic_json_save(results, RESULTS_PATH)
+
+        print(f"Saved checkpoint for seed {seed}")
+        print(f"Best epoch: {best_epoch}")
+        print(f"Best validation accuracy: {best_val_accuracy:.4%}")
+        print(f"Completed runs: {len(results)}/{len(SEEDS)}")
+
+    print("\n" + "=" * 65)
+    print("CNN5 CPU TRAINING COMPLETE")
+    print("=" * 65)
+    print(f"Results: {RESULTS_PATH.resolve()}")
+    print(f"Checkpoints: {CHECKPOINT_DIR.resolve()}")
+    print("The test set has not been evaluated.")
 
 
 if __name__ == "__main__":
